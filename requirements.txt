@@ -1,3 +1,9 @@
 # Dependencias del proyecto.
-# TODO: añadir versiones concretas, p.ej. langgraph, opentelemetry-sdk,
-# opentelemetry-exporter-otlp, openinference-instrumentation-*, python-dotenv.
+langgraph>=0.2.0
+anthropic>=0.34.0
+python-dotenv>=1.0.0
+
+# Telemetría (fase posterior del plan de acción).
+opentelemetry-sdk>=1.27.0
+opentelemetry-exporter-otlp>=1.27.0
+openinference-instrumentation-langchain>=0.1.0

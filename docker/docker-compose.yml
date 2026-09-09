@@ -1,4 +1,48 @@
 # Orquestación de servicios de infraestructura y observabilidad:
 # - otel-collector: recolector de OpenTelemetry (trazas/métricas del agente).
-# - prometheus: almacenamiento y scraping de métricas.
-# TODO: definir los servicios (otel-collector, prometheus, etc.) y sus volúmenes/redes.
+# - jaeger: visor de trazas (recibe OTLP directamente del collector).
+# - prometheus: almacenamiento y scraping de métricas expuestas por el collector.
+# - app: el Agente Analizador de Código, empaquetado desde el Dockerfile de la raíz.
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: code-analyzer-app
+    env_file:
+      - ../.env
+    environment:
+      # Dentro de la red de Docker el collector se resuelve por nombre de
+      # servicio, no por localhost (que es válido solo para ejecución en host).
+      - OTLP_ENDPOINT=http://otel-collector:4317
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command: ["--config=/etc/otelcol-contrib/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    depends_on:
+      - jaeger
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # UI
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090" # UI

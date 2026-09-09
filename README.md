@@ -48,7 +48,7 @@ graph LR
 
     subgraph Dependencias ["Servicios Externos / Datos"]
         VDB[(Vector DB<br>RAG Context)]
-        LLM((APIs LLM<br>Claude/OpenAI))
+        LLM((API LLM<br>Claude))
     end
 
     subgraph Observabilidad ["Stack Local (Docker Compose)"]

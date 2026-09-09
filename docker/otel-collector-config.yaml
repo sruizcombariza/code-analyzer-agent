@@ -1,4 +1,39 @@
 # Configuración del OpenTelemetry Collector: receivers, processors y
 # exporters usados para recibir trazas/métricas del agente y reenviarlas
-# (por ejemplo, a Prometheus).
-# TODO: definir receivers (otlp), processors (batch) y exporters (prometheus, logging).
+# a Jaeger (trazas) y Prometheus (métricas).
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+
+exporters:
+  # Jaeger acepta OTLP de forma nativa desde v1.35+, así que se reenvía
+  # como OTLP al puerto gRPC interno del servicio "jaeger" (ver docker-compose.yml).
+  otlp_grpc/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  # Expone un endpoint de métricas en formato Prometheus para que
+  # Prometheus haga scraping (ver prometheus.yml).
+  prometheus:
+    endpoint: 0.0.0.0:8889
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_grpc/jaeger, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus, debug]

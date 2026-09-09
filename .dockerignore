@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+venv/
+env/
+__pycache__/
+*.pyc
+.pytest_cache
+.env
+docker/
+openspec/
+tests/
+.claude/
+README.md
+ARTICULO.md
+PLAN_ACCION_CODE.md
