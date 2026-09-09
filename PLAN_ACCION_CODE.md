@@ -1,6 +1,6 @@
 ## 📋 Plan de Ejecución con Claude Code
 
-Este plan utiliza la metodología **OpenSpec** para acordar la arquitectura antes de la implementación, seguido de fases iterativas para construir la infraestructura, los agentes y la telemetría. Abre tu terminal integrada en VS Code y ejecuta los siguientes prompts en orden.
+Este plan utiliza la metodología **OpenSpec** para acordar la arquitectura antes de la implementación, seguido de fases iterativas para construir la infraestructura, los agentes y la telemetría. 
 
 ### Fase 1: Diseño y Contrato (OpenSpec Propose)
 Obligamos a Claude a definir el contrato de la arquitectura considerando la estructura existente, sin escribir una sola línea de código fuente.
