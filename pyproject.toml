@@ -1,0 +1,3 @@
+# Configuración moderna del proyecto (build system, metadata y dependencias).
+# TODO: definir [project], [build-system] y dependencias si se opta por
+# pyproject.toml en lugar de (o además de) requirements.txt.

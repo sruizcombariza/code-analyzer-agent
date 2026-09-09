@@ -1,0 +1,4 @@
+# Configuración del OpenTelemetry Collector: receivers, processors y
+# exporters usados para recibir trazas/métricas del agente y reenviarlas
+# (por ejemplo, a Prometheus).
+# TODO: definir receivers (otlp), processors (batch) y exporters (prometheus, logging).

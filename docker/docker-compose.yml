@@ -1,0 +1,4 @@
+# Orquestación de servicios de infraestructura y observabilidad:
+# - otel-collector: recolector de OpenTelemetry (trazas/métricas del agente).
+# - prometheus: almacenamiento y scraping de métricas.
+# TODO: definir los servicios (otel-collector, prometheus, etc.) y sus volúmenes/redes.
