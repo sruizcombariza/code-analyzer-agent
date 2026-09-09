@@ -20,6 +20,7 @@ from typing import Callable
 
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
+from opentelemetry import metrics
 
 from src.agent.state import AgentState
 
@@ -30,6 +31,23 @@ DEFAULT_MODEL = "claude-sonnet-5"
 
 SecurityReviewer = Callable[[str, str], tuple[bool, list[str]]]
 Refactorer = Callable[[str, list[str]], str]
+
+# Métrica de coste (FinOps): tokens consumidos por llamada al LLM, con
+# atributos `node` (security/refactor) y `type` (input/output) para poder
+# desglosar el gasto por sub-agente. Se crea vía proxy: funciona igual si
+# `setup_telemetry()` (que fija el MeterProvider real) corre antes o después
+# de importar este módulo.
+_meter = metrics.get_meter("code_analyzer.agent")
+_TOKEN_USAGE_COUNTER = _meter.create_counter(
+    name="llm.token.usage",
+    unit="{token}",
+    description="Tokens consumidos por llamada al LLM, por nodo y tipo (input/output).",
+)
+
+
+def _record_token_usage(node: str, usage) -> None:
+    _TOKEN_USAGE_COUNTER.add(usage.input_tokens, {"node": node, "type": "input"})
+    _TOKEN_USAGE_COUNTER.add(usage.output_tokens, {"node": node, "type": "output"})
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +124,8 @@ def review_code(
             }
         ],
     )
+    _record_token_usage("security", message.usage)
+
     tool_use = next(block for block in message.content if block.type == "tool_use")
     result = tool_use.input
     return bool(result["is_valid"]), list(result["findings"])
@@ -179,6 +199,8 @@ def refactor_code(
             }
         ],
     )
+    _record_token_usage("refactor", message.usage)
+
     tool_use = next(block for block in message.content if block.type == "tool_use")
     return str(tool_use.input["code"])
 
