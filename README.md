@@ -6,7 +6,6 @@ El ejercicio consiste en construir un sistema multi-agente autónomo capaz de an
 
 Validar empíricamente la **Observabilidad de IA** y el concepto de **Harness Engineering** (Ingeniería de Arnés).
 
-
 ## Pilares Técnicos
 *   **Orquestación:** LangGraph (Python) para gestionar el estado y el enrutamiento.
 *   **Harness Engineering:** RAG para guías de estilo (Feedforward) y políticas Zero Trust (Feedback).
@@ -116,3 +115,60 @@ graph LR
     COL -->|Exporta Trazas| JAE
     COL -->|Exporta Métricas| PRO
 ```
+
+## ▶️ Cómo ejecutar el agente
+
+### Requisitos previos
+
+- Una clave de API de Anthropic (Claude).
+- Docker y Docker Compose (para el stack de observabilidad, en ambos modos de ejecución).
+- Python 3.12+ (solo si vas a ejecutar en local, sin Docker, para el agente).
+
+Antes de cualquiera de las dos opciones, crea un archivo `.env` en la raíz del repo (no está versionado) con:
+
+```env
+ANTHROPIC_API_KEY=tu-clave-real
+OTLP_ENDPOINT=http://localhost:4317
+```
+
+### Opción A: Ejecución local (Python en el host)
+
+1. Levanta solo el stack de observabilidad (el agente no corre en Docker en este modo):
+   ```bash
+   cd docker
+   docker compose up -d otel-collector jaeger prometheus grafana
+   ```
+2. Instala las dependencias (desde la raíz del repo):
+   ```bash
+   pip install -r requirements.txt
+   ```
+   > En distribuciones tipo Debian/Ubuntu con Python gestionado por el sistema, `pip` puede rechazar la instalación con `externally-managed-environment`. Usa un entorno virtual (`python -m venv .venv && source .venv/bin/activate`) o, si no es posible crear uno, instala con `pip install --user --break-system-packages -r requirements.txt`.
+3. Ejecuta el agente:
+   ```bash
+   python -m src.main
+   ```
+   `OTLP_ENDPOINT=http://localhost:4317` en tu `.env` es correcto aquí, porque el Collector expone ese puerto al host.
+
+### Opción B: Ejecución con Docker Compose (todo containerizado)
+
+1. Desde `docker/`, levanta el stack de observabilidad:
+   ```bash
+   cd docker
+   docker compose up -d otel-collector jaeger prometheus grafana
+   ```
+2. Construye y ejecuta el agente como un contenedor de un solo uso:
+   ```bash
+   docker compose run --rm app
+   ```
+   El servicio `app` sobreescribe `OTLP_ENDPOINT` a `http://otel-collector:4317` automáticamente (ver `docker/docker-compose.yml`), para resolver el Collector por nombre de servicio dentro de la red de Docker — no necesitas cambiar tu `.env` para este modo.
+
+### Ver los resultados
+
+- **Salida del agente:** en la terminal (veredicto, iteraciones usadas, código final).
+- **Trazas (por qué nodos transitó el agente):** Jaeger UI → http://localhost:16686 (servicio `code-analyzer-agent`).
+- **Métricas de tokens por sub-agente:** Prometheus UI → http://localhost:9090 (métrica `llm_token_usage_total`).
+
+  > `python -m src.main` (o `docker compose run --rm app`) es un proceso de un solo disparo: exporta sus métricas una vez, al terminar. El exportador `prometheus` del Collector (`metric_expiration`, por defecto `5m`) y el propio Prometheus (`query.lookback-delta`, por defecto `5m`) dejan de servir esa serie pasados ~5 minutos sin una ejecución nueva. Si consultas la métrica y no ves nada, vuelve a correr el agente.
+- **Grafana (vista unificada):** http://localhost:3000 — sin login (acceso anónimo habilitado solo para este stack local). Trae **Prometheus** y **Jaeger** ya provisionados como datasources (`docker/grafana/provisioning/datasources/datasources.yml`), así que puedes explorar tokens y trazas desde un mismo lugar sin configurar nada.
+
+El código de entrada de la demo vive en `examples/sample_code_with_error.py`, y las reglas de equipo que se validan en `team-rules.md` — ambos son editables sin tocar la lógica del agente.
