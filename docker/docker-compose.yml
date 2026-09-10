@@ -2,6 +2,7 @@
 # - otel-collector: recolector de OpenTelemetry (trazas/métricas del agente).
 # - jaeger: visor de trazas (recibe OTLP directamente del collector).
 # - prometheus: almacenamiento y scraping de métricas expuestas por el collector.
+# - grafana: visualización unificada, con Prometheus y Jaeger provisionados como datasources.
 # - app: el Agente Analizador de Código, empaquetado desde el Dockerfile de la raíz.
 
 services:
@@ -46,3 +47,19 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090" # UI
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      # Stack solo accesible en localhost, sin exponer al exterior — igual
+      # que Jaeger/Prometheus, se relaja el login para uso local del PoC.
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    ports:
+      - "3000:3000" # UI
+    depends_on:
+      - prometheus
+      - jaeger
